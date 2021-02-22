@@ -4,43 +4,79 @@ $(document).ready(function() {
 
   const questionTitle = $('#question-title');
   const questionForm = $('#question-form');
-  const possibleAnswers = $('#possible-answers');
+  const possibleAnswersList = $('#possible-answers-list');
   
+  const equals = (a, b) => {
+    if (a.length !== b.length) return false;
+    const uniqueValues = new Set([...a, ...b]);
+    return uniqueValues.size === a.length;
+  };
+
   function startQuiz(questions) {
     let currentQuestion = 0;
 
+    function validate(correctAnswer) {
+      let selectionIds = [];
+
+      const userSelection = $('input:checked');
+      userSelection.each((_index, item) => selectionIds.push(item.id));
+      console.log(equals(correctAnswer, selectionIds));
+
+      renderQuestion(++currentQuestion)
+      return false;
+    }
+
+    function renderTrueFalse(possibleAnswers, correctAnswer) {
+      possibleAnswers.map((possibleAnswer) => {
+        possibleAnswersList.append(`<li><input type="radio" name="true-false" id=${possibleAnswer}>${possibleAnswer}</li>`);
+      });
+      questionForm.submit(() => validate(correctAnswer));
+    }
+
+    function renderSingleChoice(possibleAnswers, correctAnswer) {
+      possibleAnswers.map((possibleAnswer) => {
+        possibleAnswersList.append(`<li><input type="radio" name="single-choice" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
+      });
+      questionForm.submit(() => validate(correctAnswer));
+    }
+
+    function renderMultipleChoice(possibleAnswers, correctAnswer) {
+      possibleAnswers.map((possibleAnswer) => {
+        possibleAnswersList.append(`<li><input type="checkbox" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
+      });
+      questionForm.submit(() => validate(correctAnswer));
+    }
+
     function renderQuestion(questionIndex) {
-      possibleAnswers.empty();
-      questionTitle.html(questions[questionIndex].title);
+      const {
+        title,
+        question_type,
+        possible_answers,
+        correct_answer,
+      } = questions[questionIndex];
+      
+      possibleAnswersList.empty();
+      questionForm.off('submit');
+      
+      questionTitle.html(title);
   
-      switch(questions[questionIndex].question_type) {
+      switch(question_type) {
         case 'mutiplechoice-single':
-          questions[questionIndex].possible_answers.map((possibleAnswer) => {
-            possibleAnswers.append(`<li><input type="checkbox" id=${possibleAnswer.a_id}/>${possibleAnswer.caption}</li>`)
-          });
+          renderSingleChoice(possible_answers, correct_answer.toString());
           break;
         case 'mutiplechoice-multiple':
-          questions[questionIndex].possible_answers.map((possibleAnswer) => {
-            possibleAnswers.append(`<li><input type="checkbox" id=${possibleAnswer.a_id}/>${possibleAnswer.caption}</li>`)
-          });
+          renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()));
           break;
         case 'truefalse':
-          const form = possibleAnswers.append('<form></form>');
-          ['true', 'false'].map(booleanValue => form.append(`<label>${booleanValue}</label><input type="radio" name="true-false" id=${booleanValue}/>`))
+          renderTrueFalse([true, false], [correct_answer.toString()]);
           break;
         default:
+          console.log('Ta-Daaaa');
           break;
       }
     }
 
     renderQuestion(currentQuestion);
-    
-    function handleSubmit() {
-      renderQuestion(++currentQuestion)
-      return false;
-    }
-    
-    questionForm.submit(handleSubmit);
   }
 
   fetch('http://proto.io/en/jobs/candidate-questions/quiz.json')
