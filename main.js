@@ -1,6 +1,7 @@
 $(document).ready(function() {
   const quizTitle = $('#quiz-title');
   const quizDescription = $('#quiz-description');
+  const answerResult = $('#answer-result');
 
   const questionTitle = $('#question-title');
   const questionForm = $('#question-form');
@@ -16,33 +17,37 @@ $(document).ready(function() {
     let currentQuestion = 0;
 
     function validate(correctAnswer) {
-      let selectionIds = [];
+      const userSelection = $('input:checked').map((_index, item) => item.id);
+      const successfulAnswer = equals(correctAnswer, userSelection);
 
-      const userSelection = $('input:checked');
-      userSelection.each((_index, item) => selectionIds.push(item.id));
-      console.log(equals(correctAnswer, selectionIds));
-
-      renderQuestion(++currentQuestion)
+      answerResult.css({ display: 'block' });
+      if (successfulAnswer) {
+        answerResult.html('Correct');
+      } else {
+        answerResult.html('Wrong');
+        correctAnswer.map(aId => $(`li[id=${aId}]`).css({ backgroundColor: '#17eb3b' }));
+      }
+      setTimeout(() => renderQuestion(++currentQuestion), 3000);
       return false;
     }
 
     function renderTrueFalse(possibleAnswers, correctAnswer) {
       possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li><input type="radio" name="true-false" id=${possibleAnswer}>${possibleAnswer}</li>`);
+        possibleAnswersList.append(`<li id=${possibleAnswer}><input type="radio" name="true-false" id=${possibleAnswer}>${possibleAnswer}</li>`);
       });
       questionForm.submit(() => validate(correctAnswer));
     }
 
     function renderSingleChoice(possibleAnswers, correctAnswer) {
       possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li><input type="radio" name="single-choice" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
+        possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="radio" name="single-choice" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
       });
       questionForm.submit(() => validate(correctAnswer));
     }
 
     function renderMultipleChoice(possibleAnswers, correctAnswer) {
       possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li><input type="checkbox" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
+        possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="checkbox" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
       });
       questionForm.submit(() => validate(correctAnswer));
     }
@@ -55,6 +60,7 @@ $(document).ready(function() {
         correct_answer,
       } = questions[questionIndex];
       
+      answerResult.css({ display: 'none' });
       possibleAnswersList.empty();
       questionForm.off('submit');
       
@@ -62,7 +68,7 @@ $(document).ready(function() {
   
       switch(question_type) {
         case 'mutiplechoice-single':
-          renderSingleChoice(possible_answers, correct_answer.toString());
+          renderSingleChoice(possible_answers, [correct_answer.toString()]);
           break;
         case 'mutiplechoice-multiple':
           renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()));
