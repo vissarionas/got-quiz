@@ -1,12 +1,8 @@
 $(document).ready(function() {
-  const mainContainer = $('main');
   const quizTitle = $('#quiz-title');
   const quizDescription = $('#quiz-description');
-  const answerResult = $('#answer-result');
 
-  const questionTitle = $('#question-title');
-  const questionForm = $('#question-form');
-  const possibleAnswersList = $('#possible-answers-list');
+  const main = $('main');
   
   function equals(a, b) {
     if (a.length !== b.length) return false;
@@ -26,11 +22,10 @@ $(document).ready(function() {
 
   function startQuiz(quizData) {
     const { title, description, questions } = quizData;
-    const totalPoints = questions.reduce((acc, currentQuestion) => acc + currentQuestion.points, 0);
-
     quizTitle.html(title);
     quizDescription.html(description);
 
+    const totalPoints = questions.reduce((acc, currentQuestion) => acc + currentQuestion.points, 0);
     let earnedPoints = 0;
     let currentQuestion = 0;
 
@@ -39,10 +34,10 @@ $(document).ready(function() {
       const successfulAnswer = equals(correctAnswer, userAnswer);
 
       if (successfulAnswer) {
-        answerResult.css({ display: 'block' }).html('Correct');
+        $('#answer-result').css({ display: 'block' }).html('Correct');
         earnedPoints += rewardPoints;
       } else {
-        answerResult.css({ display: 'block' }).html('Wrong');
+        $('#answer-result').css({ display: 'block' }).html('Wrong');
         correctAnswer.map(aId => $(`li[id=${aId}]`).css({ backgroundColor: '#17eb3b' }));
       }
 
@@ -57,56 +52,40 @@ $(document).ready(function() {
       return false;
     }
 
-    function renderTrueFalse(possibleAnswers, correctAnswer, rewardPoints) {
-      possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li id=${possibleAnswer}><input type="radio" name="true-false" id=${possibleAnswer}>${possibleAnswer}</li>`);
-      });
-      questionForm.submit(() => validate(correctAnswer, rewardPoints));
-    }
+    function renderPossibleAnswers(questionData) {
+      const {
+        possible_answers,
+        correct_answer,
+        question_type,
+        points,
+      } = questionData;
 
-    function renderSingleChoice(possibleAnswers, correctAnswer, rewardPoints) {
-      possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="radio" name="single-choice" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
+      $('#possible-answers').empty();
+      possible_answers.map((answer) => {
+        $('#possible-answers').append(`<li id=${answer.a_id}><input type="${question_type === 'mutiplechoice-multiple' ? 'checkbox' : 'radio'}" name="${question_type}" id=${answer.a_id}>${answer.caption}</li>`);
       });
-      questionForm.submit(() => validate(correctAnswer, rewardPoints));
-    }
-
-    function renderMultipleChoice(possibleAnswers, correctAnswer, rewardPoints) {
-      possibleAnswers.map((possibleAnswer) => {
-        possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="checkbox" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
-      });
-      questionForm.submit(() => validate(correctAnswer, rewardPoints));
+      $('#question-form').submit(() => validate(correct_answer, points));
     }
 
     function renderQuestion(questionData) {
-      const {
-        title,
-        question_type,
-        possible_answers,
-        correct_answer,
-        points,
-      } = questionData;
-      
-      answerResult.css({ display: 'none' });
-      possibleAnswersList.empty();
-      questionForm.off('submit');
-      
-      questionTitle.html(title);
-  
-      switch(question_type) {
-        case 'mutiplechoice-single': // TODO Fix typo
-          renderSingleChoice(possible_answers, [correct_answer.toString()], points);
-          break;
-        case 'mutiplechoice-multiple': // TODO Fix typo
-          renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()), points);
-          break;
-        case 'truefalse':
-          renderTrueFalse([true, false], [correct_answer.toString()], points);
-          break;
-        default:
-          console.log('Ta-Daaaa');
-          break;
+      const normalizedQuestionData = {
+        ...questionData,
+        correct_answer: questionData.question_type === 'mutiplechoice-multiple'
+          ? questionData.correct_answer.map(a => a.toString())
+          : [questionData.correct_answer.toString()],
+        possible_answers: questionData.possible_answers || [{ a_id: 'true', caption: 'True' }, { a_id: 'false', caption: 'False' }],
       }
+      
+      $('#answer-result').css({ display: 'none' });
+      $('#question-form').off('submit');
+      
+      const questionDiv = $('<div></div>')
+        .append(`<h3>${normalizedQuestionData.title}</h3>`)
+        .append('<form id="question-form"><ul id="possible-answers"></ul><button type="submit">Next</button></form>')
+        .append('<p id="answer-result"></p>');
+
+      main.empty().append(questionDiv);
+      renderPossibleAnswers(normalizedQuestionData);
     }
 
     function renderResult(scoreBasedResults, successPercentage) {
@@ -114,7 +93,8 @@ $(document).ready(function() {
       const resultDiv = $('<div></div>')
         .append(`<p>${successPercentage}</p>`)
         .append(`<p>${result.message}</p>`);
-      mainContainer.replaceWith(resultDiv);
+
+      main.empty().append(resultDiv);
     }
 
     renderQuestion(questions[currentQuestion]);
