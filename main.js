@@ -7,58 +7,71 @@ $(document).ready(function() {
   const questionForm = $('#question-form');
   const possibleAnswersList = $('#possible-answers-list');
   
-  const equals = (a, b) => {
+  function equals(a, b) {
     if (a.length !== b.length) return false;
     const uniqueValues = new Set([...a, ...b]);
     return uniqueValues.size === a.length;
-  };
+  }
 
-  function startQuiz(questions) {
+  function getQuiz() {
+    return fetch('http://proto.io/en/jobs/candidate-questions/quiz.json')
+      .then(response => response.json())
+  }
+
+  function startQuiz(quizData) {
+    const { title, description, questions } = quizData;
+    quizTitle.html(title);
+    quizDescription.html(description);
+
+    let earnedPoints = 0;
     let currentQuestion = 0;
 
-    function validate(correctAnswer) {
-      const userSelection = $('input:checked').map((_index, item) => item.id);
-      const successfulAnswer = equals(correctAnswer, userSelection);
-
+    function validate(correctAnswer, rewardPoints) {
+      const userAnswer = $('input:checked').map((_index, item) => item.id);
+      const successfulAnswer = equals(correctAnswer, userAnswer);
       answerResult.css({ display: 'block' });
+
       if (successfulAnswer) {
+        earnedPoints += rewardPoints;
         answerResult.html('Correct');
+        console.log(earnedPoints);
       } else {
         answerResult.html('Wrong');
         correctAnswer.map(aId => $(`li[id=${aId}]`).css({ backgroundColor: '#17eb3b' }));
       }
-      setTimeout(() => renderQuestion(++currentQuestion), 3000);
+      setTimeout(() => renderQuestion(questions[++currentQuestion]), 3000);
       return false;
     }
 
-    function renderTrueFalse(possibleAnswers, correctAnswer) {
+    function renderTrueFalse(possibleAnswers, correctAnswer, rewardPoints) {
       possibleAnswers.map((possibleAnswer) => {
         possibleAnswersList.append(`<li id=${possibleAnswer}><input type="radio" name="true-false" id=${possibleAnswer}>${possibleAnswer}</li>`);
       });
-      questionForm.submit(() => validate(correctAnswer));
+      questionForm.submit(() => validate(correctAnswer, rewardPoints));
     }
 
-    function renderSingleChoice(possibleAnswers, correctAnswer) {
+    function renderSingleChoice(possibleAnswers, correctAnswer, rewardPoints) {
       possibleAnswers.map((possibleAnswer) => {
         possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="radio" name="single-choice" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
       });
-      questionForm.submit(() => validate(correctAnswer));
+      questionForm.submit(() => validate(correctAnswer, rewardPoints));
     }
 
-    function renderMultipleChoice(possibleAnswers, correctAnswer) {
+    function renderMultipleChoice(possibleAnswers, correctAnswer, rewardPoints) {
       possibleAnswers.map((possibleAnswer) => {
         possibleAnswersList.append(`<li id=${possibleAnswer.a_id}><input type="checkbox" id=${possibleAnswer.a_id}>${possibleAnswer.caption}</li>`)
       });
-      questionForm.submit(() => validate(correctAnswer));
+      questionForm.submit(() => validate(correctAnswer, rewardPoints));
     }
 
-    function renderQuestion(questionIndex) {
+    function renderQuestion(questionData) {
       const {
         title,
         question_type,
         possible_answers,
         correct_answer,
-      } = questions[questionIndex];
+        points,
+      } = questionData;
       
       answerResult.css({ display: 'none' });
       possibleAnswersList.empty();
@@ -68,13 +81,13 @@ $(document).ready(function() {
   
       switch(question_type) {
         case 'mutiplechoice-single':
-          renderSingleChoice(possible_answers, [correct_answer.toString()]);
+          renderSingleChoice(possible_answers, [correct_answer.toString()], points);
           break;
         case 'mutiplechoice-multiple':
-          renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()));
+          renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()), points);
           break;
         case 'truefalse':
-          renderTrueFalse([true, false], [correct_answer.toString()]);
+          renderTrueFalse([true, false], [correct_answer.toString()], points);
           break;
         default:
           console.log('Ta-Daaaa');
@@ -82,15 +95,8 @@ $(document).ready(function() {
       }
     }
 
-    renderQuestion(currentQuestion);
+    renderQuestion(questions[currentQuestion]);
   }
 
-  fetch('http://proto.io/en/jobs/candidate-questions/quiz.json')
-    .then(response => response.json())
-    .then((data) => {
-      const { title, description, questions } = data;
-      quizTitle.html(title);
-      quizDescription.html(description);
-      startQuiz(questions);
-    });
+  getQuiz().then(startQuiz);
 })
