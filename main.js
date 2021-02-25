@@ -1,4 +1,5 @@
 $(document).ready(function() {
+  const mainContainer = $('main');
   const quizTitle = $('#quiz-title');
   const quizDescription = $('#quiz-description');
   const answerResult = $('#answer-result');
@@ -18,7 +19,7 @@ $(document).ready(function() {
       .then(response => response.json())
   }
 
-  function getScoreBasedMessages() {
+  function getScoreBasedResults() {
     return fetch('http://proto.io/en/jobs/candidate-questions/result.json')
       .then(response => response.json())
   }
@@ -48,7 +49,7 @@ $(document).ready(function() {
       setTimeout(() => {
         if (++currentQuestion >= questions.length) {
           const successPercentage = (100 / totalPoints) * earnedPoints;
-          getScoreBasedMessages().then(data => renderResult(data.results, successPercentage));
+          getScoreBasedResults().then(data => renderResult(data.results, successPercentage));
         } else {
           renderQuestion(questions[currentQuestion])
         }
@@ -109,7 +110,11 @@ $(document).ready(function() {
     }
 
     function renderResult(scoreBasedResults, successPercentage) {
-      console.log(scoreBasedResults.find(result => successPercentage > result.minpoints && successPercentage <= result.maxpoints));
+      const result = scoreBasedResults.find(result => successPercentage > result.minpoints && successPercentage <= result.maxpoints);
+      const resultDiv = $('<div></div>')
+        .append(`<p>${successPercentage}</p>`)
+        .append(`<p>${result.message}</p>`);
+      mainContainer.replaceWith(resultDiv);
     }
 
     renderQuestion(questions[currentQuestion]);
