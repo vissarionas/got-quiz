@@ -18,8 +18,15 @@ $(document).ready(function() {
       .then(response => response.json())
   }
 
+  function getScoreBasedMessages() {
+    return fetch('http://proto.io/en/jobs/candidate-questions/result.json')
+      .then(response => response.json())
+  }
+
   function startQuiz(quizData) {
     const { title, description, questions } = quizData;
+    const totalPoints = questions.reduce((acc, currentQuestion) => acc + currentQuestion.points, 0);
+
     quizTitle.html(title);
     quizDescription.html(description);
 
@@ -29,17 +36,23 @@ $(document).ready(function() {
     function validate(correctAnswer, rewardPoints) {
       const userAnswer = $('input:checked').map((_index, item) => item.id);
       const successfulAnswer = equals(correctAnswer, userAnswer);
-      answerResult.css({ display: 'block' });
 
       if (successfulAnswer) {
+        answerResult.css({ display: 'block' }).html('Correct');
         earnedPoints += rewardPoints;
-        answerResult.html('Correct');
-        console.log(earnedPoints);
       } else {
-        answerResult.html('Wrong');
+        answerResult.css({ display: 'block' }).html('Wrong');
         correctAnswer.map(aId => $(`li[id=${aId}]`).css({ backgroundColor: '#17eb3b' }));
       }
-      setTimeout(() => renderQuestion(questions[++currentQuestion]), 3000);
+
+      setTimeout(() => {
+        if (++currentQuestion >= questions.length) {
+          const successPercentage = (100 / totalPoints) * earnedPoints;
+          getScoreBasedMessages().then(data => renderResult(data.results, successPercentage));
+        } else {
+          renderQuestion(questions[currentQuestion])
+        }
+      }, 500);
       return false;
     }
 
@@ -80,10 +93,10 @@ $(document).ready(function() {
       questionTitle.html(title);
   
       switch(question_type) {
-        case 'mutiplechoice-single':
+        case 'mutiplechoice-single': // TODO Fix typo
           renderSingleChoice(possible_answers, [correct_answer.toString()], points);
           break;
-        case 'mutiplechoice-multiple':
+        case 'mutiplechoice-multiple': // TODO Fix typo
           renderMultipleChoice(possible_answers, correct_answer.map(a => a.toString()), points);
           break;
         case 'truefalse':
@@ -93,6 +106,10 @@ $(document).ready(function() {
           console.log('Ta-Daaaa');
           break;
       }
+    }
+
+    function renderResult(scoreBasedResults, successPercentage) {
+      console.log(scoreBasedResults.find(result => successPercentage > result.minpoints && successPercentage <= result.maxpoints));
     }
 
     renderQuestion(questions[currentQuestion]);
