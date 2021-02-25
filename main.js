@@ -61,9 +61,18 @@ $(document).ready(function() {
       } = questionData;
 
       $('#possible-answers').empty();
+
       possible_answers.map((answer) => {
-        $('#possible-answers').append(`<li id=${answer.a_id}><input type="${question_type === 'mutiplechoice-multiple' ? 'checkbox' : 'radio'}" name="${question_type}" id=${answer.a_id}>${answer.caption}</li>`);
+        const answerListItem = $('<li>', { id: answer.a_id })
+          .append($(`<label>${answer.caption}</label>`, { for: answer.a_id })
+          .append($('<input>', {
+            type: question_type === 'mutiplechoice-multiple' ? 'checkbox' : 'radio',
+            name: question_type,
+            id: answer.a_id,
+          })));
+        $('#possible-answers').append(answerListItem);
       });
+
       $('#question-form').submit(() => validate(correct_answer, points));
     }
 
@@ -78,11 +87,17 @@ $(document).ready(function() {
       
       $('#answer-result').css({ display: 'none' });
       $('#question-form').off('submit');
-      
+
+      const title = $(`<h3>${normalizedQuestionData.title}</h3>`);
+      const image = $('<img>', { src: normalizedQuestionData.img, alt: 'Question image' });
+      const form = $('<form>', { id: 'question-form' }).append($('<ul>', { id: 'possible-answers' })).append($('<button>Next</button>', { type: 'submit' }));
+      const result = $('<p>', { id: 'answer-result' });
+
       const questionDiv = $('<div></div>')
-        .append(`<h3>${normalizedQuestionData.title}</h3>`)
-        .append('<form id="question-form"><ul id="possible-answers"></ul><button type="submit">Next</button></form>')
-        .append('<p id="answer-result"></p>');
+        .append(title)
+        .append(image)
+        .append(form)
+        .append(result);
 
       main.empty().append(questionDiv);
       renderPossibleAnswers(normalizedQuestionData);
