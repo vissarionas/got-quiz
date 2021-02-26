@@ -1,0 +1,23 @@
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#question-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.answer-list-item {
+  list-style: none;
+  clear: both;
+  float: left;
+}

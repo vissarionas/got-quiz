@@ -22,6 +22,7 @@ $(document).ready(function() {
 
   function startQuiz(quizData) {
     const { title, description, questions } = quizData;
+
     quizTitle.html(title);
     quizDescription.html(description);
 
@@ -48,7 +49,7 @@ $(document).ready(function() {
         } else {
           renderQuestion(questions[currentQuestion])
         }
-      }, 500);
+      }, 3000);
       return false;
     }
 
@@ -60,16 +61,21 @@ $(document).ready(function() {
         points,
       } = questionData;
 
+      function toggleButtonEnablement() {
+        const selectedInputs = $('input:checked');
+        $('button:contains("Next")').prop('disabled', !selectedInputs.length);
+      }
+
       $('#possible-answers').empty();
 
       possible_answers.map((answer) => {
-        const answerListItem = $('<li>', { id: answer.a_id })
-          .append($(`<label>${answer.caption}</label>`, { for: answer.a_id })
+        const answerListItem = $('<li>', { id: answer.a_id, class: 'answer-list-item' })
+          .append($(`<label>${answer.caption}</label>`)
           .append($('<input>', {
             type: question_type === 'mutiplechoice-multiple' ? 'checkbox' : 'radio',
             name: question_type,
             id: answer.a_id,
-          })));
+          })).change(toggleButtonEnablement));
         $('#possible-answers').append(answerListItem);
       });
 
@@ -90,10 +96,12 @@ $(document).ready(function() {
 
       const title = $(`<h3>${normalizedQuestionData.title}</h3>`);
       const image = $('<img>', { src: normalizedQuestionData.img, alt: 'Question image' });
-      const form = $('<form>', { id: 'question-form' }).append($('<ul>', { id: 'possible-answers' })).append($('<button>Next</button>', { type: 'submit' }));
+      const form = $('<form>', { id: 'question-form' })
+        .append($('<ul>', { id: 'possible-answers' }))
+        .append($('<button>', { type: 'submit', text: 'Next', disabled: true }));
       const result = $('<p>', { id: 'answer-result' });
 
-      const questionDiv = $('<div></div>')
+      const questionDiv = $('<div>', { id: 'main-content' })
         .append(title)
         .append(image)
         .append(form)
@@ -105,9 +113,9 @@ $(document).ready(function() {
 
     function renderResult(scoreBasedResults, successPercentage) {
       const result = scoreBasedResults.find(result => successPercentage > result.minpoints && successPercentage <= result.maxpoints);
-      const resultDiv = $('<div></div>')
-        .append(`<p>${successPercentage}</p>`)
-        .append(`<p>${result.message}</p>`);
+      const resultDiv = $('<div>', { id: 'main-content' })
+        .append(`<h1>${successPercentage}% Success</h1>`)
+        .append(`<h2>${result.message}</h2>`);
 
       main.empty().append(resultDiv);
     }
